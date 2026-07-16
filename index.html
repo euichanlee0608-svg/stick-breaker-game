@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>뚝딱! 357 막대기 게임</title>
+    <!-- Tailwind CSS for layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for UI icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Nanum Pen Script & Gamja Flower for a perfect hand-drawn doodle look -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gamja+Flower&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --paper-bg: #f5efe6;
+            --paper-dot: #e1d7c6;
+            --paper-line: #f0e8dc;
+            --sheet-bg: #fffdf9;
+            --sheet-bg-soft: rgba(255, 253, 249, 0.9);
+            --sheet-grid: rgba(147, 197, 253, 0.25);
+            --sheet-border: #e2d3bb;
+            --sheet-shadow-1: #ebdcb9;
+            --sheet-shadow-2: #f3ebd3;
+            --ink: #292018;
+            --ink-soft: #57493c;
+            --ink-faint: #8a7864;
+            --btn-border: #4a3b32;
+            --btn-bg: #fffdf9;
+            --btn-bg-hover: #fdf5e6;
+            --card-border: #d6c7a8;
+            --amber-panel: rgba(255, 251, 235, 0.7);
+            --amber-panel-border: rgba(217, 179, 108, 0.4);
+            --wood-stroke: #4a3b32;
+            --wood-grain: #b09a7c;
+            --scrollbar-thumb: #cbd5e1;
+            color-scheme: light;
+        }
+
+        body {
+            font-family: 'Nanum Pen Script', 'Gamja Flower', cursive, sans-serif;
+            background-color: var(--paper-bg);
+            background-image:
+                radial-gradient(var(--paper-dot) 1px, transparent 1px),
+                linear-gradient(var(--paper-line) 1px, transparent 1px);
+            background-size: 24px 24px, 100% 24px;
+            color: var(--ink);
+            transition: background-color 0.35s ease, color 0.35s ease;
+        }
+
+        .sketch-font {
+            font-family: 'Gamja Flower', cursive;
+        }
+
+        .handwritten {
+            font-family: 'Nanum Pen Script', cursive;
+        }
+
+        /* Paper Sheet Style with stacked pages shadow */
+        .notebook-sheet {
+            background-color: var(--sheet-bg);
+            background-image:
+                linear-gradient(var(--sheet-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--sheet-grid) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border: 2px solid var(--sheet-border);
+            box-shadow:
+                3px 3px 0px var(--sheet-shadow-1),
+                6px 6px 0px var(--sheet-shadow-2),
+                10px 10px 20px rgba(0, 0, 0, 0.05);
+            position: relative;
+            transition: background-color 0.35s ease, border-color 0.35s ease;
+        }
+
+        /* Left margin red line common in school notebooks */
+        .notebook-sheet::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 45px;
+            width: 2px;
+            background-color: rgba(239, 68, 68, 0.3);
+            pointer-events: none;
+        }
+
+        .card-surface {
+            background-color: var(--sheet-bg-soft);
+            border-color: var(--card-border) !important;
+            transition: background-color 0.35s ease, border-color 0.35s ease;
+        }
+
+        .modal-surface {
+            background-color: var(--sheet-bg);
+            transition: background-color 0.35s ease;
+        }
+
+        .amber-panel {
+            background-color: var(--amber-panel);
+            border-color: var(--amber-panel-border) !important;
+        }
+
+        /* Hand-drawn doodle buttons: a wobbly double outline instead of a flat digital shadow,
+           like a pen retracing the same rounded box twice. */
+        .sketch-btn {
+            position: relative;
+            border: 2.2px solid var(--btn-border);
+            border-radius: 14px 6px 13px 7px / 7px 14px 6px 13px;
+            box-shadow: 1.5px 2px 0px var(--btn-border);
+            transition: all 0.15s ease-in-out, background-color 0.35s ease, border-color 0.35s ease;
+            background-color: var(--btn-bg);
+            min-height: 44px;
+        }
+        .sketch-btn::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border: 1.3px solid var(--btn-border);
+            border-radius: 9px 15px 7px 14px / 15px 7px 13px 6px;
+            opacity: 0.28;
+            pointer-events: none;
+            transform: rotate(-0.7deg);
+        }
+        .sketch-btn:hover:not(:disabled) {
+            transform: translate(-1px, -1px) rotate(-0.5deg);
+            box-shadow: 2px 3px 0px var(--btn-border);
+            background-color: var(--btn-bg-hover);
+        }
+        .sketch-btn:active:not(:disabled) {
+            transform: translate(1px, 2px) rotate(0deg);
+            box-shadow: 0px 0px 0px var(--btn-border);
+        }
+        .sketch-btn:disabled {
+            border-color: #a3a3a3;
+            color: #a3a3a3;
+            box-shadow: none;
+            background-color: #fafafa;
+            cursor: not-allowed;
+        }
+        .sketch-btn:disabled::after { opacity: 0.1; }
+
+        /* Sticky-note style hand-placed tilt, used sparingly on chips/callouts */
+        .doodle-tilt-l { transform: rotate(-0.6deg); }
+        .doodle-tilt-r { transform: rotate(0.5deg); }
+
+        /* Icon-only header controls: feels like circling a doodle with a pen on hover */
+        .theme-toggle {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.15s ease, transform 0.15s ease;
+        }
+        .theme-toggle:hover {
+            background-color: var(--amber-panel);
+            transform: rotate(-6deg) scale(1.08);
+        }
+
+        /* ===================== Stick wood illustration ===================== */
+        .stick-wrapper {
+            perspective: 400px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .stick-wrapper svg { display: block; overflow: visible; }
+
+        .stick-face {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Three tone variants so the concentric board's A/B/C rings read apart by color */
+        .wood-fill { fill: url(#woodGrad); }
+        .wood-fill-b { fill: url(#woodGradB); }
+        .wood-fill-c { fill: url(#woodGradC); }
+        .wood-stroke { stroke: var(--wood-stroke); }
+        .wood-grain-line { stroke: var(--wood-grain); }
+        .wood-knot { fill: url(#knotGrad); stroke: var(--wood-stroke); }
+        .wood-ring { stroke: var(--wood-grain); }
+
+        /* Intact stick: fully visible, single continuous illustration */
+        .stick-intact {
+            opacity: 1;
+            transition: opacity 0.25s ease;
+        }
+
+        /* Broken halves: hidden until break, then fling + settle as fallen twigs */
+        .stick-top, .stick-bottom {
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.75s cubic-bezier(.22,1.4,.4,1), opacity 0.45s ease 0.05s;
+        }
+
+        /* Hover wiggles for active (unbroken) sticks */
+        .stick-wrapper.active:hover {
+            transform: scale(1.15) rotate(4deg);
+            z-index: 40;
+        }
+
+        .stick-wrapper.broken {
+            cursor: default;
+        }
+        .stick-wrapper.broken .stick-intact {
+            opacity: 0;
+        }
+        /* Broken pieces stay put in their slot (just a snapped gap + slight droop) rather
+           than flying off — keeps the board tidy and makes the break itself easy to read.
+           They're also faded to a light dashed sketch (detail stripped out) so a board full
+           of breaks doesn't compete visually with the still-active sticks. */
+        .stick-wrapper.broken .stick-top {
+            opacity: 0.4;
+            transform:
+                translate(calc(var(--fx1, -3px) * 1px), calc(var(--fy1, -8px) * 1px))
+                rotate(calc(var(--fr1, -10deg) * 1deg));
+        }
+        .stick-wrapper.broken .stick-bottom {
+            opacity: 0.4;
+            transform:
+                translate(calc(var(--fx2, 3px) * 1px), calc(var(--fy2, 8px) * 1px))
+                rotate(calc(var(--fr2, 10deg) * 1deg));
+        }
+        .stick-wrapper.broken .stick-top .wood-grain-line,
+        .stick-wrapper.broken .stick-bottom .wood-grain-line,
+        .stick-wrapper.broken .stick-top .wood-knot,
+        .stick-wrapper.broken .stick-bottom .wood-knot,
+        .stick-wrapper.broken .stick-top .wood-ring,
+        .stick-wrapper.broken .stick-bottom .wood-ring {
+            display: none;
+        }
+        .stick-wrapper.broken .stick-top path.wood-stroke,
+        .stick-wrapper.broken .stick-bottom path.wood-stroke {
+            fill: none;
+            stroke-dasharray: 2.4 2.2;
+        }
+
+        /* Wood-chip / dust particle burst at the instant of breaking */
+        .wood-chip {
+            position: absolute;
+            pointer-events: none;
+            z-index: 30;
+            animation: chip-fly 0.6s ease-out forwards;
+        }
+        @keyframes chip-fly {
+            0% { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; }
+            100% {
+                transform:
+                    translate(calc(var(--cx,14px) * 1px), calc(var(--cy,26px) * 1px))
+                    rotate(calc(var(--cr,180deg) * 1deg)) scale(0.4);
+                opacity: 0;
+            }
+        }
+        .crack-flash {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 25;
+            animation: crack-flash-anim 0.35s ease-out forwards;
+        }
+        @keyframes crack-flash-anim {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+
+        /* Snap text bubble */
+        .snap-bubble {
+            font-family: 'Gamja Flower', cursive;
+        }
+
+        /* Spiral Notebook Binder Rings decoration */
+        .binder-ring {
+            width: 14px;
+            height: 32px;
+            background: linear-gradient(90deg, #d1d5db 0%, #e5e7eb 50%, #9ca3af 100%);
+            border: 1.5px solid var(--btn-border);
+            border-radius: 9999px;
+            box-shadow: 1px 2px 3px rgba(0,0,0,0.15);
+        }
+
+        /* Circular background guide lines — kept faint so the sticks stay the focus */
+        .ring-guide {
+            border: 1.5px dashed rgba(74, 59, 50, 0.10);
+            border-radius: 50%;
+            position: absolute;
+            pointer-events: none;
+        }
+
+        /* Soft paper-colored halo behind the concentric board: mutes the grid pattern
+           right under the sticks so the ring reads cleanly instead of busy. */
+        .circular-vignette {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--sheet-bg) 58%, rgba(255,253,249,0) 88%);
+            pointer-events: none;
+        }
+
+        /* Scrollbars for pencil sketches */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 9999px;
+        }
+
+        /* ===================== Responsive / touch refinements ===================== */
+        @media (max-width: 640px) {
+            .sketch-btn { min-height: 46px; }
+            #circular-stage {
+                width: clamp(240px, 84vw, 340px);
+                height: clamp(240px, 84vw, 340px);
+            }
+        }
+
+        @media (max-width: 420px) {
+            #btn-action .action-label-full { display: none; }
+            #btn-action .action-label-short { display: inline; }
+        }
+        .action-label-short { display: none; }
+    </style>
+</head>
+<body class="min-h-screen text-stone-800 flex flex-col justify-between p-3 md:p-4 lg:p-6 select-none overflow-x-hidden">
+
+    <!-- Shared SVG defs: wood gradients reused by every stick illustration.
+         Three tone variants (A/B/C) let the concentric board tell rings apart by
+         color, not just by radius. -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <linearGradient id="woodGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#f8efd9"/>
+                <stop offset="38%" stop-color="#eee0c2"/>
+                <stop offset="72%" stop-color="#dcc79a"/>
+                <stop offset="100%" stop-color="#c5aa78"/>
+            </linearGradient>
+            <linearGradient id="woodGradB" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#f7e2d6"/>
+                <stop offset="38%" stop-color="#eec7ae"/>
+                <stop offset="72%" stop-color="#d9a483"/>
+                <stop offset="100%" stop-color="#b97c58"/>
+            </linearGradient>
+            <linearGradient id="woodGradC" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#eef1e2"/>
+                <stop offset="38%" stop-color="#dde3c7"/>
+                <stop offset="72%" stop-color="#bdc79f"/>
+                <stop offset="100%" stop-color="#98a677"/>
+            </linearGradient>
+            <radialGradient id="knotGrad" cx="40%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#8a6842"/>
+                <stop offset="65%" stop-color="#5c4229"/>
+                <stop offset="100%" stop-color="#3f2d1c"/>
+            </radialGradient>
+        </defs>
+    </svg>
+
+    <!-- Centered Header Section -->
+    <header class="max-w-2xl md:max-w-4xl lg:max-w-6xl w-full mx-auto text-center flex flex-col items-center gap-1 mb-2 lg:mb-3">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl md:text-3xl lg:text-4xl text-amber-700"><i class="fa-solid fa-pencil"></i></span>
+            <h1 class="text-2xl md:text-4xl lg:text-5xl font-extrabold text-stone-800 sketch-font tracking-tight">뚝딱! 357 막대기 게임</h1>
+        </div>
+        <p class="text-sm md:text-base lg:text-lg text-stone-600 handwritten font-semibold">
+            ⚠️ <span class="text-red-500 underline decoration-wavy font-bold">인접해서 완전히 이어져 있는</span> 막대기들만 묶어서 동시에 파괴할 수 있습니다!
+        </p>
+
+        <!-- Current Configuration Quick Info + Controls -->
+        <div class="flex flex-wrap justify-center items-center gap-2 mt-1">
+            <div class="doodle-tilt-l flex flex-wrap justify-center items-center gap-2 text-sm font-bold amber-panel px-3 py-1.5 rounded-xl border">
+                <span id="cfg-mode-disp">🤖 AI 대전</span> |
+                <span id="cfg-type-disp">📜 클래식 (3-5-7)</span> |
+                <span id="cfg-diff-disp">지옥 모드</span>
+                <button onclick="openConfigModal()" class="ml-1 text-xs text-amber-800 hover:underline"><i class="fa-solid fa-gear"></i> 다시 설정</button>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button onclick="openRulesModal()" class="theme-toggle text-stone-600" title="게임 규칙 보기">
+                    <i class="fa-solid fa-book"></i>
+                </button>
+                <button onclick="initGame()" class="theme-toggle text-stone-600" title="다시 하기">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button onclick="toggleSound()" id="btn-sound" class="theme-toggle text-stone-600" title="사운드 켜기/끄기">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Sketchbook Paper Block -->
+    <main class="max-w-2xl md:max-w-4xl lg:max-w-6xl w-full mx-auto flex-grow flex flex-col items-center">
+
+        <div class="w-full notebook-sheet rounded-3xl p-4 md:p-6 lg:p-8 flex flex-col justify-between shadow-2xl relative min-h-[360px] lg:min-h-[560px]">
+
+            <!-- Spiral Rings decoration across the top -->
+            <div class="absolute -top-4 left-0 right-0 flex justify-center gap-6 pointer-events-none z-10">
+                <div class="binder-ring"></div>
+                <div class="binder-ring"></div>
+                <div class="binder-ring"></div>
+                <div class="binder-ring flex md:hidden"></div>
+                <div class="binder-ring"></div>
+                <div class="binder-ring"></div>
+                <div class="binder-ring"></div>
+            </div>
+
+            <!-- Current status message display (Centered) -->
+            <div class="flex flex-col items-center border-b-2 border-dashed border-stone-300 pb-2 mb-2 lg:pb-3 lg:mb-3">
+                <div class="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center">
+                    <span id="turn-badge" class="doodle-tilt-r shrink-0 px-4 py-1 lg:px-5 lg:py-1.5 rounded-full text-lg lg:text-xl font-bold bg-amber-200 text-stone-800 border-2 border-stone-700 shadow-sm whitespace-nowrap">
+                        내 차례
+                    </span>
+                    <span id="game-status-text" class="text-lg sm:text-xl lg:text-2xl text-stone-700 font-bold">부러뜨릴 연속된 막대기들을 선택하세요!</span>
+                </div>
+                <div class="text-sm lg:text-base text-stone-500 font-bold mt-1" id="stick-counters">
+                    남은 줄 묶음: A(3) · B(5) · C(7)
+                </div>
+            </div>
+
+            <!-- Classic Straight Stage Container -->
+            <div id="classic-stage" class="flex flex-col gap-2.5 md:gap-4 lg:gap-6 justify-center my-auto w-full items-center pl-8">
+                <!-- Row 0 (A) -->
+                <div class="flex items-center gap-4 w-full justify-center">
+                    <div class="w-8 lg:w-10 text-stone-500 font-extrabold text-2xl lg:text-3xl text-center border-r-2 border-stone-200 pr-2 sketch-font">A</div>
+                    <div id="row-0" class="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 flex-wrap py-1 min-h-[86px] lg:min-h-[130px] w-full max-w-md lg:max-w-2xl">
+                        <!-- Classic Sticks injected here -->
+                    </div>
+                </div>
+
+                <!-- Row 1 (B) -->
+                <div class="flex items-center gap-4 w-full justify-center">
+                    <div class="w-8 lg:w-10 text-stone-500 font-extrabold text-2xl lg:text-3xl text-center border-r-2 border-stone-200 pr-2 sketch-font">B</div>
+                    <div id="row-1" class="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 flex-wrap py-1 min-h-[86px] lg:min-h-[130px] w-full max-w-md lg:max-w-2xl">
+                        <!-- Classic Sticks injected here -->
+                    </div>
+                </div>
+
+                <!-- Row 2 (C) -->
+                <div class="flex items-center gap-4 w-full justify-center">
+                    <div class="w-8 lg:w-10 text-stone-500 font-extrabold text-2xl lg:text-3xl text-center border-r-2 border-stone-200 pr-2 sketch-font">C</div>
+                    <div id="row-2" class="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 flex-wrap py-1 min-h-[86px] lg:min-h-[130px] w-full max-w-md lg:max-w-2xl">
+                        <!-- Classic Sticks injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Circular Concentric Stage Container (Sticks rendered very thin to prevent overlapping) -->
+            <div id="circular-stage" class="hidden relative w-full max-w-[340px] md:max-w-[440px] lg:max-w-[560px] aspect-square mx-auto flex items-center justify-center my-auto">
+                <!-- Soft halo that mutes the notebook grid behind the ring so it reads calmer -->
+                <div class="circular-vignette"></div>
+
+                <!-- Concentric ring guides for sketchbook styling. Sized as % of the stage
+                     (matches the 110/200/290-out-of-340 ratios the stick radii use) so they
+                     scale together with the stage instead of only the sticks scaling. -->
+                <div class="ring-guide" style="width: 32.4%; height: 32.4%;"></div>
+                <div class="ring-guide" style="width: 58.8%; height: 58.8%;"></div>
+                <div class="ring-guide" style="width: 85.3%; height: 85.3%;"></div>
+
+                <!-- Central Hub Pencil Label: shows the actual randomized A-B-C pile sizes -->
+                <div class="absolute w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-full bg-[#fcf8f0] border border-stone-300 flex items-center justify-center text-stone-400 font-bold text-xs md:text-sm pointer-events-none shadow-inner sketch-font">
+                    <span id="circular-hub-label">🌀 3-5-7</span>
+                </div>
+
+                <!-- Container to inject absolutely positioned sticks -->
+                <div id="circular-sticks-wrapper" class="absolute inset-0 w-full h-full">
+                    <!-- Circular Sticks dynamically injected here -->
+                </div>
+            </div>
+
+            <!-- Interactive control zone (Centered) -->
+            <div class="mt-2 lg:mt-4 flex flex-col sm:flex-row justify-between items-center gap-3 border-t-2 border-dashed border-stone-300 pt-3 lg:pt-4 w-full">
+                <div class="text-md lg:text-lg text-stone-600 font-bold" id="selection-summary">
+                    선택한 막대기가 없어요.
+                </div>
+                <div class="flex gap-3 w-full sm:w-auto">
+                    <button id="btn-reset-selection" onclick="resetSelection()" class="flex-1 sm:flex-initial px-4 lg:px-5 py-2 lg:py-2.5 sketch-btn text-stone-700 font-extrabold text-lg lg:text-xl flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-eraser"></i> 취소
+                    </button>
+                    <button id="btn-action" onclick="finalizeTurn()" disabled class="flex-1 sm:flex-initial px-6 lg:px-8 py-2 lg:py-2.5 sketch-btn bg-amber-200 text-stone-800 disabled:bg-stone-100 disabled:text-stone-400 font-black text-lg lg:text-xl tracking-wider flex items-center justify-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-gavel"></i>
+                        <span class="action-label-full">부수기 (턴 완료)</span>
+                        <span class="action-label-short">부수기</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- AI Pensiveness overlay -->
+            <div id="ai-thinking-overlay" class="hidden absolute inset-0 bg-white/80 rounded-3xl flex flex-col items-center justify-center gap-3 z-20">
+                <div class="w-12 h-12 rounded-full border-4 border-amber-600/20 border-t-amber-600 animate-spin"></div>
+                <p id="ai-thinking-text" class="text-amber-800 font-extrabold text-2xl sketch-font animate-bounce">AI가 최적의 수 분석 중...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Rules Modal (opened any time via the 📖 button, doesn't touch setup) -->
+    <div id="rules-modal" class="hidden fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="modal-surface border-4 border-stone-700 max-w-lg w-full rounded-3xl p-6 md:p-8 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+            <div class="text-center mb-4">
+                <span class="text-4xl text-amber-700"><i class="fa-solid fa-book-open"></i></span>
+                <h2 class="text-3xl font-extrabold text-stone-800 sketch-font mt-1">게임 규칙</h2>
+            </div>
+
+            <div class="amber-panel p-4 rounded-2xl border-2 border-dashed border-stone-400 text-stone-700 text-md font-semibold space-y-2">
+                <p>1. 내 턴이 오면 <strong>A, B, C 중 단 한 줄(혹은 하나의 동심 고리)</strong>만 골라서 원하는 개수만큼 부숩니다.</p>
+                <p>2. 단, <strong>가로로 서로 빈 틈 없이 연속되게 붙어있는 막대기들</strong>만 묶어 부러뜨릴 수 있습니다. 중간에 끊어진 틈은 절대 무단횡단하여 함께 꺾을 수 없습니다!</p>
+                <p>3. <strong>동심원 고리 확장판</strong>의 경우, 고리가 파괴되지 않고 온전하다면 양쪽 끝(0번과 마지막 번호)을 한 묶음으로 연결해서 부술 수 있습니다.</p>
+            </div>
+
+            <div class="doodle-tilt-l mt-4 amber-panel p-3 rounded-xl border">
+                <p class="text-md text-amber-900 font-extrabold flex items-center gap-1.5">
+                    <i class="fa-solid fa-triangle-exclamation"></i> 마지막 막대기 부수면 패배 (역님 규칙)
+                </p>
+                <p class="text-sm text-stone-500 mt-1 font-semibold leading-tight">
+                    막대기가 쪼개져 고립된 그룹이 여러 개 생겨도 동일하게 적용됩니다. 필드에 남은 최후의 온전한 파편 1개를 어쩔 수 없이 꺾어 부러뜨리게 되는 사람이 최종 패배합니다!
+                </p>
+            </div>
+
+            <button onclick="closeRulesModal()" class="w-full mt-6 py-2.5 sketch-btn text-stone-600 font-extrabold text-md bg-stone-100">
+                닫기
+            </button>
+        </div>
+    </div>
+
+    <!-- Initial Config & Welcome Modal Popup -->
+    <div id="config-modal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="modal-surface border-4 border-stone-700 max-w-lg w-full rounded-3xl p-6 md:p-8 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+            <div class="text-center mb-6">
+                <span class="text-5xl text-amber-700"><i class="fa-solid fa-book-open"></i></span>
+                <h2 class="text-4xl font-extrabold text-stone-800 sketch-font mt-2">357 막대기 게임 규칙 & 준비</h2>
+                <p class="text-stone-500 handwritten text-xl font-semibold mt-1">대결 조건과 이름을 장부에 적고 연필을 쥐세요!</p>
+            </div>
+
+            <!-- Easy/Hard Rules Summary Scroll -->
+            <div class="amber-panel p-4 rounded-2xl border-2 border-dashed border-stone-400 text-stone-700 text-md font-semibold mb-6 max-h-[160px] overflow-y-auto space-y-2">
+                <h4 class="font-extrabold text-amber-800 flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 막대기 파괴 특약법</h4>
+                <p>1. 내 턴이 오면 <strong>A, B, C 중 단 한 줄(혹은 하나의 동심 고리)</strong>만 골라서 원하는 개수만큼 부숩니다.</p>
+                <p>2. 단, **가로로 서로 빈 틈 없이 연속되게 붙어있는 막대기들**만 묶어 부러뜨릴 수 있습니다. 중간에 끊어진 틈은 절대 무단횡단하여 함께 꺾을 수 없습니다!</p>
+                <p>3. **동심원 고리 확장판**의 경우, 고리가 파괴되지 않고 온전하다면 <strong>양쪽 끝(0번과 마지막 번호)을 한 묶음으로 연결</strong>해서 부술 수 있습니다.</p>
+                <p class="text-red-600 font-bold">4. [패배 고정 규칙] 최후에 남은 온전한 단 1개의 나뭇가지를 억지로 부수게 되는 플레이어가 최종 패배합니다.</p>
+            </div>
+
+            <!-- Setup Fields Form -->
+            <div class="space-y-4 text-stone-700">
+                <!-- Mode Selector (Classic vs Circular) -->
+                <div>
+                    <span class="block text-sm text-stone-500 font-extrabold mb-1">📐 게임 판형식</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="setup-type-classic" class="py-2 px-3 rounded-xl border-2 border-stone-700 font-bold transition-all bg-stone-700 text-amber-50" onclick="setSetupType('classic')">
+                            📜 클래식 (3-5-7)
+                        </button>
+                        <button id="setup-type-circular" class="py-2 px-3 rounded-xl border-2 border-stone-300 font-bold transition-all text-stone-600" onclick="setSetupType('circular')">
+                            🌀 동심원 (랜덤 크기)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Opponent Type Selector -->
+                <div>
+                    <span class="block text-sm text-stone-500 font-extrabold mb-1">👥 대전 대상</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="setup-mode-pve" class="py-2 px-3 rounded-xl border-2 border-stone-700 font-bold transition-all bg-stone-700 text-amber-50" onclick="setSetupMode('pve')">
+                            🤖 AI 대전
+                        </button>
+                        <button id="setup-mode-pvp" class="py-2 px-3 rounded-xl border-2 border-stone-300 font-bold transition-all text-stone-600" onclick="setSetupMode('pvp')">
+                            👥 2인 로컬 대결
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Setup Player Name Fields (P2 field is hidden entirely in AI mode — the AI's name isn't user-editable).
+                     Starts in the PVE layout (grid-cols-1, p2 hidden) to match the default selected mode above. -->
+                <div id="name-fields-grid" class="grid grid-cols-1 gap-3">
+                    <div>
+                        <label class="block text-sm text-stone-500 font-extrabold mb-1" id="label-p1">플레이어 1 이름</label>
+                        <input type="text" id="input-p1-name" value="너구리" class="w-full px-3 py-1.5 border-2 border-stone-400 rounded-xl bg-amber-50/30 text-stone-800 font-extrabold text-center focus:outline-none focus:border-stone-700">
+                    </div>
+                    <div id="p2-name-field" class="hidden">
+                        <label class="block text-sm text-stone-500 font-extrabold mb-1" id="label-p2">플레이어 2 이름</label>
+                        <input type="text" id="input-p2-name" value="AI 알파나무" class="w-full px-3 py-1.5 border-2 border-stone-400 rounded-xl bg-amber-50/30 text-stone-800 font-extrabold text-center focus:outline-none focus:border-stone-700">
+                    </div>
+                </div>
+
+                <!-- AI Setup Options (Only shown in PVE) -->
+                <div id="ai-setup-options" class="grid grid-cols-2 gap-3">
+                    <div>
+                        <span class="block text-sm text-stone-500 font-extrabold mb-1">⚙️ AI 실력</span>
+                        <div class="flex gap-1 bg-stone-100 p-1 rounded-xl border border-stone-400 text-xs">
+                            <button id="setup-diff-easy" class="flex-1 py-1 rounded-lg text-stone-600 font-bold" onclick="setSetupDiff('easy')">쉬움</button>
+                            <button id="setup-diff-hard" class="flex-1 py-1 rounded-lg bg-stone-700 text-amber-50 font-bold" onclick="setSetupDiff('hard')">지옥</button>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="block text-sm text-stone-500 font-extrabold mb-1">🥇 선공 순서</span>
+                        <div class="flex gap-1 bg-stone-100 p-1 rounded-xl border border-stone-400 text-xs">
+                            <button id="setup-order-first" class="flex-1 py-1 rounded-lg bg-stone-700 text-amber-50 font-bold" onclick="setSetupOrder('first')">내가 먼저</button>
+                            <button id="setup-order-second" class="flex-1 py-1 rounded-lg text-stone-600 font-bold" onclick="setSetupOrder('second')">AI 먼저</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <button onclick="confirmSetupAndStart()" class="w-full mt-6 py-3 sketch-btn bg-amber-200 text-stone-800 font-black text-xl tracking-wide flex items-center justify-center gap-2">
+                <i class="fa-solid fa-play"></i> 막대기 부러뜨리러 가기!
+            </button>
+        </div>
+    </div>
+
+    <!-- GameOver Canvas Pop -->
+    <div id="game-over-modal" class="hidden fixed inset-0 bg-stone-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="modal-surface border-4 border-stone-700 max-w-sm w-full rounded-3xl p-6 shadow-2xl text-center relative overflow-hidden max-h-[92vh] overflow-y-auto">
+            <div class="w-16 h-16 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-stone-700 shadow-sm">
+                <i class="fa-solid fa-award text-3xl"></i>
+            </div>
+
+            <h2 id="winner-announcement" class="text-4xl font-extrabold text-stone-800 mb-2 sketch-font">
+                내가 이겼어요!
+            </h2>
+            <p id="winner-details" class="text-lg text-stone-600 mb-6 px-4 font-semibold">
+                인공지능의 실수를 완벽하게 저지했습니다!
+            </p>
+
+            <div class="space-y-3">
+                <button onclick="initGame(); closeGameOverModal();" class="w-full py-3 sketch-btn bg-amber-200 text-stone-800 font-black text-lg">
+                    한 판 더 도전!
+                </button>
+                <button onclick="openConfigModal(); closeGameOverModal();" class="w-full py-2.5 sketch-btn text-stone-600 font-extrabold text-md bg-stone-100">
+                    전체 규칙 / 조건 변경
+                </button>
+                <button onclick="closeGameOverModal()" class="w-full py-2 sketch-btn text-stone-500 font-bold text-md border-transparent shadow-none bg-transparent hover:bg-stone-50">
+                    칠판 구경하기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Game Logic Controller -->
+    <script>
+        // Hand-drawn wooden twig illustrations. viewBox is always "0 0 24 120".
+        // Each style provides: a seamless INTACT outline (used while unbroken), and a
+        // matching TOP / BOTTOM piece with a jagged snapped edge (used only once broken).
+        // Some styles include a wood knot for variety.
+        const STICK_STYLES = [
+            // Style 1: slim straight twig, no knot
+            {
+                intactPath: "M12,5 C9.3,5 8.6,11 9,22 C9.4,45 8.8,75 9.1,98 C9.3,108 9.6,113 12,115 C14.4,113 14.7,108 14.9,98 C15.2,75 14.6,45 15,22 C15.4,11 14.7,5 12,5 Z",
+                intactGrain: ["M10.8,12 C10.4,40 10.9,80 10.6,108", "M13.3,15 C13.7,42 13.2,78 13.5,105"],
+                topPath: "M12,5 C9.3,5 8.6,11 9,22 C9.4,36 9,44 9.2,48 L11,52 L9.6,55 L12.4,58 L10.8,53 L14,57 L12.6,52 L14.8,48 C15.1,38 14.6,22 15,22 C15.4,11 14.7,5 12,5 Z",
+                topGrain: ["M10.8,12 C10.4,28 10.8,40 10.6,46", "M13.3,15 C13.6,30 13.3,40 13.5,45"],
+                bottomPath: "M9.4,68 L11.2,64 L9.8,61 L12.4,66 L10.8,62 L14,65 L12.6,70 L15,68 C15.2,80 14.6,100 14.9,108 C14.7,113 14.4,114 12,115 C9.6,114 9.3,113 9.1,108 C8.8,100 9.2,80 9.4,68 Z",
+                bottomGrain: ["M10.6,72 C10.9,85 10.5,100 10.7,108", "M13.4,75 C13.1,88 13.5,100 13.3,107"],
+                knot: null
+            },
+            // Style 2: bumpier organic twig with an upper knot
+            {
+                intactPath: "M12,6 C9.6,6 8.4,13 8.8,24 C9.3,42 8.6,60 9,80 C9.3,95 8.9,106 12,114 C15.1,106 14.7,95 15,80 C15.4,60 14.7,42 15.2,24 C15.6,13 14.4,6 12,6 Z",
+                intactGrain: ["M10.5,14 C10,35 10.6,65 10.3,100", "M13.6,18 C14,40 13.4,68 13.7,102"],
+                topPath: "M12,6 C9.6,6 8.4,13 8.8,24 C9.2,34 8.9,44 9.1,49 L11.3,45 L9.7,53 L12.6,56 L10.5,50 L14.2,54 L12.4,49 L15.3,49 C15.5,38 14.8,24 15.2,24 C15.6,13 14.4,6 12,6 Z",
+                topGrain: ["M10.5,14 C10,30 10.6,42 10.3,48", "M13.6,18 C14,32 13.4,42 13.7,47"],
+                bottomPath: "M9.3,65 L11.6,61 L9.8,68 L12.8,64 L10.6,70 L14.4,66 L12.5,71 L15.4,68 C15.5,78 14.9,98 15,106 C14.9,111 14.5,113 12,114 C9.5,113 9.1,111 9,106 C8.9,98 9.2,78 9.3,65 Z",
+                bottomGrain: ["M10.4,74 C10,85 10.5,98 10.2,106", "M13.5,77 C13.9,88 13.3,98 13.6,104"],
+                knot: { cx: 13.4, cy: 26, rx: 2.1, ry: 1.5, piece: "top" }
+            },
+            // Style 3: clean tapered twig, no knot
+            {
+                intactPath: "M12,4 C10.2,4 9.6,10 10,20 C10.6,42 9.4,78 9.8,100 C10,109 10.6,113 12,116 C13.4,113 14,109 14.2,100 C14.6,78 13.4,42 14,20 C14.4,10 13.8,4 12,4 Z",
+                intactGrain: ["M11.2,10 C10.9,38 11.4,78 11.1,106", "M12.9,13 C13.2,40 12.7,78 13,104"],
+                topPath: "M12,4 C10.2,4 9.6,10 10,20 C10.4,32 10,42 10.1,47 L11.6,44 L10.4,50 L12.8,53 L11.3,48 L13.9,52 L12.6,47 L14.3,47 C14.5,36 13.9,20 14,20 C14.4,10 13.8,4 12,4 Z",
+                topGrain: ["M11.2,10 C10.9,26 11.4,40 11.1,46", "M12.9,13 C13.2,28 12.7,40 13,45"],
+                bottomPath: "M10.2,63 L11.7,59 L10.3,66 L12.9,62 L11.2,68 L13.9,64 L12.4,69 L14.2,63 C14.4,76 13.9,96 14.1,104 C14,110 13.5,113 12,116 C10.5,113 10,110 9.9,104 C9.7,96 10,76 10.2,63 Z",
+                bottomGrain: ["M11.1,72 C10.8,85 11.3,98 11,106", "M13,75 C13.3,88 12.8,98 13.1,105"],
+                knot: null
+            },
+            // Style 4: thicker gnarled twig with a lower knot
+            {
+                intactPath: "M12,5 C9.2,5 8.2,12 8.7,23 C9.2,44 8.2,70 8.8,92 C9.1,103 9,110 12,115 C15,110 14.9,103 15.2,92 C15.8,70 14.8,44 15.3,23 C15.8,12 14.8,5 12,5 Z",
+                intactGrain: ["M10.3,13 C9.8,40 10.5,75 10.1,102", "M13.8,16 C14.3,42 13.6,76 14,100"],
+                topPath: "M12,5 C9.2,5 8.2,12 8.7,23 C9.1,34 8.8,44 9,49 L11.4,45 L9.5,53 L12.7,56 L10.4,50 L14.3,54 L12.3,49 L15.3,49 C15.6,38 14.9,23 15.3,23 C15.8,12 14.8,5 12,5 Z",
+                topGrain: ["M10.3,13 C9.8,30 10.5,42 10.1,48", "M13.8,16 C14.3,32 13.6,42 14,47"],
+                bottomPath: "M9.1,66 L11.5,62 L9.6,69 L12.8,65 L10.5,71 L14.4,67 L12.4,72 L15.4,66 C15.6,76 14.9,96 15.1,105 C14.9,110 14.6,112 12,115 C9.4,112 9.1,110 9,105 C8.8,96 9,76 9.1,66 Z",
+                bottomGrain: ["M10,74 C9.6,87 10.2,98 9.9,106", "M13.7,77 C14.1,89 13.4,98 13.8,105"],
+                knot: { cx: 10.4, cy: 70, rx: 2.3, ry: 1.6, piece: "bottom" }
+            }
+        ];
+
+        // Builds the inner markup for one stick: a seamless intact illustration plus
+        // hidden top/bottom broken pieces (revealed via the `.broken` class in CSS).
+        // `simplified` drops grain/knot/end-ring detail — used on the concentric board,
+        // where many small radiating sticks otherwise read as visually busy.
+        // `fillClass` picks the wood tone (wood-fill / wood-fill-b / wood-fill-c) so
+        // rings can be told apart by color, not just by radius.
+        function buildStickMarkup(style, simplified = false, fillClass = 'wood-fill') {
+            const knotMarkup = (piece) => {
+                if (simplified || !style.knot || style.knot.piece !== piece) return '';
+                const k = style.knot;
+                return `<ellipse class="wood-knot" cx="${k.cx}" cy="${k.cy}" rx="${k.rx}" ry="${k.ry}" stroke-width="0.5" />`;
+            };
+            const grainMarkup = (lines) => simplified ? '' : lines.map(d => `<path class="wood-grain-line" d="${d}" fill="none" stroke-width="0.7" stroke-linecap="round" opacity="0.75" />`).join('');
+            const capRing = (cy) => simplified ? '' : `<ellipse class="wood-ring" cx="12" cy="${cy}" rx="2.7" ry="0.9" fill="none" stroke-width="0.55" opacity="0.65" /><ellipse class="wood-ring" cx="12" cy="${cy}" rx="1.35" ry="0.45" fill="none" stroke-width="0.5" opacity="0.55" />`;
+
+            return `
+                <svg class="stick-face stick-intact" viewBox="0 0 24 120" xmlns="http://www.w3.org/2000/svg">
+                    <path class="${fillClass} wood-stroke" d="${style.intactPath}" stroke-width="1.6" stroke-linejoin="round" />
+                    ${grainMarkup(style.intactGrain)}
+                    ${capRing(6.5)}${capRing(113.5)}
+                    ${knotMarkup('top')}${knotMarkup('bottom')}
+                </svg>
+                <svg class="stick-face stick-top" viewBox="0 0 24 120" xmlns="http://www.w3.org/2000/svg">
+                    <path class="${fillClass} wood-stroke" d="${style.topPath}" stroke-width="1.6" stroke-linejoin="round" />
+                    ${grainMarkup(style.topGrain)}
+                    ${capRing(6.5)}
+                    ${knotMarkup('top')}
+                </svg>
+                <svg class="stick-face stick-bottom" viewBox="0 0 24 120" xmlns="http://www.w3.org/2000/svg">
+                    <path class="${fillClass} wood-stroke" d="${style.bottomPath}" stroke-width="1.6" stroke-linejoin="round" />
+                    ${grainMarkup(style.bottomGrain)}
+                    ${capRing(113.5)}
+                    ${knotMarkup('bottom')}
+                </svg>
+            `;
+        }
+
+        // Randomized (but stable-per-stick) break-gap parameters so broken twigs don't all
+        // look identical. The pieces stay in their original slot — just a small snapped gap
+        // and droop, not a scatter. Generated once per stick and reused on every re-render.
+        function randomFlyParams() {
+            const side = Math.random() < 0.5 ? -1 : 1;
+            return {
+                fx1: side * (1.5 + Math.random() * 3),
+                fy1: -(6 + Math.random() * 6),
+                fr1: -(6 + Math.random() * 11),
+                fx2: -side * (1.5 + Math.random() * 3),
+                fy2: 6 + Math.random() * 6,
+                fr2: 6 + Math.random() * 11
+            };
+        }
+
+        // Spawns a brief burst of wood chips + dust + a crack flash on a stick wrapper
+        // at the exact instant it breaks. Purely cosmetic; auto-removes itself.
+        function spawnBreakBurst(stickDiv) {
+            const flash = document.createElement('div');
+            flash.className = 'crack-flash';
+            flash.style.background = 'radial-gradient(circle, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 70%)';
+            stickDiv.appendChild(flash);
+            setTimeout(() => flash.remove(), 400);
+
+            const chipCount = 3 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < chipCount; i++) {
+                const chip = document.createElement('div');
+                chip.className = 'wood-chip';
+                const isDust = i % 2 === 0;
+                const size = isDust ? (2 + Math.random() * 2) : (3 + Math.random() * 3);
+                chip.style.left = '48%';
+                chip.style.top = '50%';
+                chip.style.width = size + 'px';
+                chip.style.height = (isDust ? size : size * 1.6) + 'px';
+                chip.style.background = isDust ? '#c9b48c' : '#8a6842';
+                chip.style.borderRadius = isDust ? '50%' : '2px';
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 10 + Math.random() * 16;
+                chip.style.setProperty('--cx', (Math.cos(angle) * dist).toFixed(1));
+                chip.style.setProperty('--cy', (Math.sin(angle) * dist - 4).toFixed(1));
+                chip.style.setProperty('--cr', Math.floor(Math.random() * 360));
+                stickDiv.appendChild(chip);
+                setTimeout(() => chip.remove(), 650);
+            }
+        }
+
+        // Core App States
+        let state = {
+            gameModeType: 'classic',   // 'classic' or 'circular'
+            piles: [3, 5, 7],         
+            sticks: [],               // Stick object records
+            selectedRow: null,        
+            selectedSticks: [],       // Currently highlighted stick indices
+            turn: 1,                  // 1: User 1, 2: AI / User 2
+            gameMode: 'pve',          // 'pve' or 'pvp'
+            playerOrder: 'first',     // 'first' or 'second'
+            aiDifficulty: 'hard',     
+            gameStatus: 'setup',      
+            audioEnabled: true,       
+            p1Name: '너구리',
+            p2Name: 'AI 알파나무'
+        };
+
+        // Temporary setup options kept inside state while in configuration modal
+        let setupState = {
+            gameModeType: 'classic',
+            gameMode: 'pve',
+            aiDifficulty: 'hard',
+            playerOrder: 'first'
+        };
+
+        let audioCtx = null;
+
+        // Wood breakdown audio synthesis (Pure browser Web Audio Nodes)
+        function playWoodCrack() {
+            if (!state.audioEnabled) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                let duration = 0.22;
+                let bufferSize = audioCtx.sampleRate * duration;
+                let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                let data = buffer.getChannelData(0);
+
+                for (let i = 0; i < bufferSize; i++) {
+                    let percent = i / bufferSize;
+                    let rand = Math.random() * 2 - 1;
+                    let env = Math.pow(1 - percent, 2.5);
+                    let pop = Math.sin(percent * 150) > 0.88 ? 0.35 : 0;
+                    data[i] = (rand * 0.10 + pop * 0.22) * env;
+                }
+
+                let noiseNode = audioCtx.createBufferSource();
+                noiseNode.buffer = buffer;
+
+                let filter = audioCtx.createBiquadFilter();
+                filter.type = "highpass";
+                filter.frequency.setValueAtTime(600, audioCtx.currentTime);
+
+                let gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.7, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+
+                noiseNode.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                noiseNode.start();
+
+            } catch (e) {
+                console.warn("Audio Context init fail: ", e);
+            }
+        }
+
+        // Slight paper click sound
+        function playSlightClick() {
+            if (!state.audioEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch(e){}
+        }
+
+        // Show the startup selection panel
+        function openConfigModal() {
+            document.getElementById('config-modal').classList.remove('hidden');
+            state.gameStatus = 'setup';
+        }
+
+        // Rules can be reopened any time during play without touching setup/state
+        function openRulesModal() {
+            document.getElementById('rules-modal').classList.remove('hidden');
+        }
+        function closeRulesModal() {
+            document.getElementById('rules-modal').classList.add('hidden');
+        }
+
+        function setSetupType(type) {
+            setupState.gameModeType = type;
+            const btnClassic = document.getElementById('setup-type-classic');
+            const btnCircular = document.getElementById('setup-type-circular');
+            if (type === 'classic') {
+                btnClassic.className = "py-2 px-3 rounded-xl border-2 border-stone-700 font-bold transition-all bg-stone-700 text-amber-50";
+                btnCircular.className = "py-2 px-3 rounded-xl border-2 border-stone-300 font-bold transition-all text-stone-600 bg-transparent";
+            } else {
+                btnCircular.className = "py-2 px-3 rounded-xl border-2 border-stone-700 font-bold transition-all bg-stone-700 text-amber-50";
+                btnClassic.className = "py-2 px-3 rounded-xl border-2 border-stone-300 font-bold transition-all text-stone-600 bg-transparent";
+            }
+            playSlightClick();
+        }
+
+        function setSetupMode(mode) {
+            setupState.gameMode = mode;
+            const btnPve = document.getElementById('setup-mode-pve');
+            const btnPvp = document.getElementById('setup-mode-pvp');
+            const aiOptions = document.getElementById('ai-setup-options');
+            const p2Field = document.getElementById('p2-name-field');
+            const p2Input = document.getElementById('input-p2-name');
+            const nameGrid = document.getElementById('name-fields-grid');
+
+            if (mode === 'pve') {
+                btnPve.className = "py-2 px-3 rounded-xl border-2 border-stone-700 font-bold transition-all bg-stone-700 text-amber-50";
+                btnPvp.className = "py-2 px-3 rounded-xl border-2 border-stone-300 font-bold transition-all text-stone-600 bg-transparent";
+                aiOptions.classList.remove('hidden');
+                // AI's name isn't user-editable — just hide the second field entirely
+                p2Field.classList.add('hidden');
+                nameGrid.classList.remove('grid-cols-2');
+                nameGrid.classList.add('grid-cols-1');
+                p2Input.value = "AI 알파나무";
+            } else {
+                btnPvp.className = "py-2 px-3 rounded-xl border-2 border-stone-700 font-bold transition-all bg-stone-700 text-amber-50";
+                btnPve.className = "py-2 px-3 rounded-xl border-2 border-stone-300 font-bold transition-all text-stone-600 bg-transparent";
+                aiOptions.classList.add('hidden');
+                p2Field.classList.remove('hidden');
+                nameGrid.classList.remove('grid-cols-1');
+                nameGrid.classList.add('grid-cols-2');
+                p2Input.value = "고슴도치";
+            }
+            playSlightClick();
+        }
+
+        function setSetupDiff(diff) {
+            setupState.aiDifficulty = diff;
+            const btnEasy = document.getElementById('setup-diff-easy');
+            const btnHard = document.getElementById('setup-diff-hard');
+            if (diff === 'easy') {
+                btnEasy.className = "flex-1 py-1 rounded-lg bg-stone-700 text-amber-50 font-bold";
+                btnHard.className = "flex-1 py-1 rounded-lg text-stone-600 font-bold bg-transparent";
+            } else {
+                btnHard.className = "flex-1 py-1 rounded-lg bg-stone-700 text-amber-50 font-bold";
+                btnEasy.className = "flex-1 py-1 rounded-lg text-stone-600 font-bold bg-transparent";
+            }
+            playSlightClick();
+        }
+
+        function setSetupOrder(order) {
+            setupState.playerOrder = order;
+            const btnFirst = document.getElementById('setup-order-first');
+            const btnSecond = document.getElementById('setup-order-second');
+            if (order === 'first') {
+                btnFirst.className = "flex-1 py-1 rounded-lg bg-stone-700 text-amber-50 font-bold";
+                btnSecond.className = "flex-1 py-1 rounded-lg text-stone-600 font-bold bg-transparent";
+            } else {
+                btnSecond.className = "flex-1 py-1 rounded-lg bg-stone-700 text-amber-50 font-bold";
+                btnFirst.className = "flex-1 py-1 rounded-lg text-stone-600 font-bold bg-transparent";
+            }
+            playSlightClick();
+        }
+
+        // Apply temporary setups and initiate game
+        function confirmSetupAndStart() {
+            // Apply text names
+            let p1 = document.getElementById('input-p1-name').value.trim();
+            let p2 = document.getElementById('input-p2-name').value.trim();
+            state.p1Name = p1 || "플레이어 1";
+            state.p2Name = p2 || (setupState.gameMode === 'pve' ? "AI 알파나무" : "플레이어 2");
+
+            // Apply select settings
+            state.gameModeType = setupState.gameModeType;
+            state.gameMode = setupState.gameMode;
+            state.aiDifficulty = setupState.aiDifficulty;
+            state.playerOrder = setupState.playerOrder;
+
+            // Hide startup screen
+            document.getElementById('config-modal').classList.add('hidden');
+
+            // Quick display configs top panel
+            document.getElementById('cfg-mode-disp').innerText = state.gameMode === 'pve' ? `🤖 vs ${state.p2Name}` : "👥 2인 대결";
+            document.getElementById('cfg-type-disp').innerText = state.gameModeType === 'classic' ? "📜 클래식 (3-5-7)" : "🌀 동심원 (랜덤)";
+            document.getElementById('cfg-diff-disp').innerText = state.gameMode === 'pve' ? (state.aiDifficulty === 'hard' ? '지옥 등급' : '쉬움 등급') : '대결 중';
+
+            initGame();
+        }
+
+        // Telegram notification on every new game (reuses the same GAS -> Telegram relay
+        // already deployed for portfolio/newslab/engbrain, prefixed with 'stickgame|' so
+        // it shares the one webhook without needing new backend infra). Fires on first
+        // start, "다시 하기", and "한 판 더 도전" alike, since all of those call initGame().
+        function notifyNewGame() {
+            try {
+                if (location.protocol === 'file:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+                const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxWKySPAxWsYnoZ9zo7G2wUK2CusxPwjy1USt_DyCFmmIe_y2pu8lAKBluImAHXXKHv4A/exec';
+                const modeText = state.gameMode === 'pve'
+                    ? `AI 대전(${state.aiDifficulty === 'hard' ? '지옥' : '쉬움'}) vs ${state.p2Name}`
+                    : `2인 대결 vs ${state.p2Name}`;
+                const typeText = state.gameModeType === 'classic'
+                    ? '클래식(3-5-7)'
+                    : `동심원(${state.piles.join('-')})`;
+                const msg = `🎮 새 게임 시작! 플레이어: ${state.p1Name} | ${modeText} | ${typeText}`;
+                const img = new Image();
+                img.src = WEBAPP_URL + '?ref=' + encodeURIComponent('stickgame|' + msg);
+            } catch (e) {}
+        }
+
+        // Reset and init board structure
+        function initGame() {
+            // Decide pile sizes
+            if (state.gameModeType === 'classic') {
+                state.piles = [3, 5, 7];
+                document.getElementById('classic-stage').classList.remove('hidden');
+                document.getElementById('circular-stage').classList.add('hidden');
+            } else {
+                // Randomized sizes for Concentric rings (A: 4-6, B: 7-9, C: 10-13)
+                let aSize = Math.floor(Math.random() * 3) + 4; // 4 ~ 6
+                let bSize = Math.floor(Math.random() * 3) + 7; // 7 ~ 9
+                let cSize = Math.floor(Math.random() * 4) + 10; // 10 ~ 13
+                state.piles = [aSize, bSize, cSize];
+                document.getElementById('classic-stage').classList.add('hidden');
+                document.getElementById('circular-stage').classList.remove('hidden');
+                // Center label should reflect this game's actual random sizes, not a fixed "3-5-7"
+                document.getElementById('circular-hub-label').innerText = `🌀 ${aSize}-${bSize}-${cSize}`;
+            }
+
+            notifyNewGame();
+
+            state.selectedRow = null;
+            state.selectedSticks = [];
+            state.gameStatus = 'playing';
+
+            // Decide who starts
+            if (state.gameMode === 'pve') {
+                state.turn = state.playerOrder === 'first' ? 1 : 2;
+            } else {
+                state.turn = 1; // PVP always starts with Player 1
+            }
+
+            // Create stick records (We build thinner stick templates dynamically)
+            state.sticks = [];
+            let stickId = 0;
+            for (let rowIdx = 0; rowIdx < 3; rowIdx++) {
+                let size = state.piles[rowIdx];
+                for (let i = 0; i < size; i++) {
+                    state.sticks.push({
+                        id: stickId++,
+                        row: rowIdx,
+                        localIdx: i,
+                        broken: false,
+                        selected: false,
+                        style: STICK_STYLES[Math.floor(Math.random() * STICK_STYLES.length)],
+                        fly: randomFlyParams()
+                    });
+                }
+            }
+
+            renderBoard();
+            updateUIState();
+            
+            let modeTitle = state.gameModeType === 'classic' ? '클래식(3-5-7)' : `원형 확장판(A:${state.piles[0]}, B:${state.piles[1]}, C:${state.piles[2]})`;
+            addLog("알림", `📓 <strong>${modeTitle}</strong> 판형이 준비되었습니다!`, "text-amber-800 font-extrabold");
+
+            // If AI Turn starts first, trigger AI Logic automatically
+            if (state.gameMode === 'pve' && state.turn === 2) {
+                triggerAILogic();
+            }
+            
+            closeGameOverModal();
+        }
+
+        // Main board renderer
+        function renderBoard() {
+            if (state.gameModeType === 'classic') {
+                renderClassicBoard();
+            } else {
+                renderCircularBoard();
+            }
+        }
+
+        // Classic horizontal rows rendering with detailed wood illustrations
+        function renderClassicBoard() {
+            for (let r = 0; r < 3; r++) {
+                const container = document.getElementById(`row-${r}`);
+                container.innerHTML = '';
+
+                let rowSticks = state.sticks.filter(s => s.row === r);
+
+                rowSticks.forEach(stick => {
+                    const stickDiv = document.createElement('div');
+                    stickDiv.className = `stick-wrapper w-6 sm:w-7 md:w-8 lg:w-9 h-20 sm:h-24 md:h-28 lg:h-36 relative flex flex-col items-center justify-center`;
+                    stickDiv.style.setProperty('--fx1', stick.fly.fx1.toFixed(1));
+                    stickDiv.style.setProperty('--fy1', stick.fly.fy1.toFixed(1));
+                    stickDiv.style.setProperty('--fr1', stick.fly.fr1.toFixed(1));
+                    stickDiv.style.setProperty('--fx2', stick.fly.fx2.toFixed(1));
+                    stickDiv.style.setProperty('--fy2', stick.fly.fy2.toFixed(1));
+                    stickDiv.style.setProperty('--fr2', stick.fly.fr2.toFixed(1));
+
+                    if (stick.broken) {
+                        stickDiv.classList.add('broken');
+                    } else {
+                        stickDiv.classList.add('active');
+                    }
+
+                    stickDiv.innerHTML = buildStickMarkup(stick.style);
+
+                    // Red crayon highlight circle overlay
+                    if (stick.selected && !stick.broken) {
+                        const redRing = document.createElement('div');
+                        redRing.className = "absolute inset-0 w-full h-full pointer-events-none z-10 scale-x-125 scale-y-105";
+                        redRing.innerHTML = `
+                            <svg viewBox="0 0 30 130" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M 15,10 C 25,10 28,60 25,115 C 22,125 8,125 5,115 C 2,60 5,10 15,10 M 13,12 C 23,15 24,58 23,110 C 20,122 10,122 7,110 C 4,58 7,15 13,12"
+                                      fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        `;
+                        stickDiv.appendChild(redRing);
+                    }
+
+                    stickDiv.dataset.stickId = stick.id;
+                    stickDiv.onclick = () => handleStickSelection(stick.id);
+                    container.appendChild(stickDiv);
+                });
+            }
+        }
+
+        // Polar coordinate calculation for circular sticks. Radii and stick size scale
+        // with the actual rendered container width, so the ring fits any screen size.
+        function renderCircularBoard() {
+            const wrapper = document.getElementById('circular-sticks-wrapper');
+            const stage = document.getElementById('circular-stage');
+            wrapper.innerHTML = '';
+
+            // Radii/size were designed against a 340px reference stage; scale proportionally.
+            const REF = 340;
+            let actual = stage.clientWidth || REF;
+            let scale = actual / REF;
+
+            const baseRadii = [55, 100, 145];
+            const radii = baseRadii.map(v => v * scale);
+            // Smaller than the classic-mode sticks on purpose: up to 13 of them radiate from
+            // one point here, so keeping them slim is what keeps the ring legible.
+            const stickW = 12 * scale;
+            const stickH = 50 * scale;
+            // Each ring starts at a different angle so A/B/C sticks never line up radially
+            // into one long streak — without this, ring[0] of every row sits at the same
+            // "12 o'clock" spot and the rings visually fuse together.
+            const ringAngleOffsetDeg = [0, 10, -7];
+            const ringFillClass = ['wood-fill', 'wood-fill-b', 'wood-fill-c'];
+
+            for (let r = 0; r < 3; r++) {
+                let rowSticks = state.sticks.filter(s => s.row === r);
+                let count = rowSticks.length;
+                let radius = radii[r];
+                let angleOffset = ringAngleOffsetDeg[r] * Math.PI / 180;
+
+                rowSticks.forEach((stick, i) => {
+                    // Position calculations
+                    let angle = (i / count) * 2 * Math.PI - Math.PI / 2 + angleOffset; // Start from top, ring-staggered
+                    let angleDeg = angle * 180 / Math.PI;
+
+                    let x = radius * Math.cos(angle);
+                    let y = radius * Math.sin(angle);
+
+                    const stickDiv = document.createElement('div');
+                    stickDiv.className = `stick-wrapper absolute flex flex-col items-center justify-center`;
+                    stickDiv.style.width = stickW + 'px';
+                    stickDiv.style.height = stickH + 'px';
+                    stickDiv.style.left = `calc(50% + ${x}px - ${stickW / 2}px)`;
+                    stickDiv.style.top = `calc(50% + ${y}px - ${stickH / 2}px)`;
+                    // Aligns the stick tangentially along the circumference
+                    stickDiv.style.transform = `rotate(${angleDeg + 90}deg)`;
+                    stickDiv.style.setProperty('--fx1', stick.fly.fx1.toFixed(1));
+                    stickDiv.style.setProperty('--fy1', stick.fly.fy1.toFixed(1));
+                    stickDiv.style.setProperty('--fr1', stick.fly.fr1.toFixed(1));
+                    stickDiv.style.setProperty('--fx2', stick.fly.fx2.toFixed(1));
+                    stickDiv.style.setProperty('--fy2', stick.fly.fy2.toFixed(1));
+                    stickDiv.style.setProperty('--fr2', stick.fly.fr2.toFixed(1));
+
+                    if (stick.broken) {
+                        stickDiv.classList.add('broken');
+                    } else {
+                        stickDiv.classList.add('active');
+                    }
+
+                    stickDiv.innerHTML = buildStickMarkup(stick.style, true, ringFillClass[r]);
+
+                    // Red highlighter ring overlay
+                    if (stick.selected && !stick.broken) {
+                        const redRing = document.createElement('div');
+                        redRing.className = "absolute inset-0 w-full h-full pointer-events-none z-10 scale-x-125 scale-y-105";
+                        redRing.innerHTML = `
+                            <svg viewBox="0 0 30 130" class="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M 15,10 C 25,10 28,60 25,115 C 22,125 8,125 5,115 C 2,60 5,10 15,10 M 13,12 C 23,15 24,58 23,110 C 20,122 10,122 7,110 C 4,58 7,15 13,12"
+                                      fill="none" stroke="#ef4444" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        `;
+                        stickDiv.appendChild(redRing);
+                    }
+
+                    // Append Row labels inside A0, B0, C0 for visual guides
+                    if (i === 0 && !stick.broken) {
+                        let labelText = ['A', 'B', 'C'][r];
+                        const badge = document.createElement('span');
+                        badge.className = "absolute -top-5 text-stone-500 font-bold text-xs select-none sketch-font";
+                        badge.innerText = labelText;
+                        stickDiv.appendChild(badge);
+                    }
+
+                    stickDiv.dataset.stickId = stick.id;
+                    stickDiv.onclick = () => handleStickSelection(stick.id);
+                    wrapper.appendChild(stickDiv);
+                });
+            }
+        }
+
+        // Re-layout the circular ring if the viewport is resized/rotated
+        let _resizeRaf = null;
+        window.addEventListener('resize', () => {
+            if (state.gameStatus !== 'playing' || state.gameModeType !== 'circular') return;
+            if (_resizeRaf) cancelAnimationFrame(_resizeRaf);
+            _resizeRaf = requestAnimationFrame(renderCircularBoard);
+        });
+
+        // Unified check if the given selections in a row form a single unbroken contiguous segment
+        function checkContiguous(rowSticks, selectedList) {
+            if (selectedList.length <= 1) return true;
+            let isCircular = (state.gameModeType === 'circular');
+
+            if (!isCircular) {
+                // Classic linear check
+                let indices = selectedList.map(s => s.localIdx).sort((a,b) => a-b);
+                for (let i = 0; i < indices.length - 1; i++) {
+                    if (indices[i+1] - indices[i] !== 1) return false;
+                }
+                return true;
+            } else {
+                // Circular wrapping check
+                let n = rowSticks.length;
+                let notSelectedIdx = rowSticks.findIndex(s => !s.selected);
+                if (notSelectedIdx === -1) return true; // All elements selected -> loop contiguous
+
+                // Rotate list starting from an unselected element to linearize the ring
+                let rotated = [];
+                for (let i = 0; i < n; i++) {
+                    rotated.push(rowSticks[(notSelectedIdx + i) % n]);
+                }
+
+                // In this rotated linear segment, all selected ones must occupy one single interval
+                let firstSelected = rotated.findIndex(s => s.selected);
+                let lastSelected = -1;
+                for (let i = rotated.length - 1; i >= 0; i--) {
+                    if (rotated[i].selected) {
+                        lastSelected = i;
+                        break;
+                    }
+                }
+                for (let i = firstSelected; i <= lastSelected; i++) {
+                    if (!rotated[i].selected) return false;
+                }
+                return true;
+            }
+        }
+
+        // Finds the shortest unbroken route (interval or arc) connecting currently selected sticks with the target
+        function findShortestUnbrokenPath(rowSticks, selectedList, targetStick) {
+            let n = rowSticks.length;
+            let isCircular = (state.gameModeType === 'circular');
+
+            if (!isCircular) {
+                // Classic straight pathing
+                let selIndices = selectedList.map(s => s.localIdx);
+                let minSel = Math.min(...selIndices);
+                let maxSel = Math.max(...selIndices);
+                let targetIdx = targetStick.localIdx;
+
+                let start = Math.min(targetIdx, minSel);
+                let end = Math.max(targetIdx, maxSel);
+
+                let path = [];
+                for (let i = start; i <= end; i++) {
+                    let s = rowSticks.find(x => x.localIdx === i);
+                    if (s.broken) return null; // Path blocked by broken gap
+                    path.push(s);
+                }
+                return path;
+            } else {
+                // Circular concentric ring pathfinding
+                let validPaths = [];
+
+                selectedList.forEach(startStick => {
+                    let sIdx = startStick.localIdx;
+                    let tIdx = targetStick.localIdx;
+
+                    // Path Direction A: Clockwise
+                    let pathCW = [];
+                    let curr = sIdx;
+                    let blockedCW = false;
+                    while (curr !== tIdx) {
+                        let s = rowSticks[curr];
+                        if (s.broken) { blockedCW = true; break; }
+                        pathCW.push(s);
+                        curr = (curr + 1) % n;
+                    }
+                    if (!blockedCW) {
+                        let targetS = rowSticks[tIdx];
+                        if (!targetS.broken) {
+                            pathCW.push(targetS);
+                            validPaths.push(pathCW);
+                        }
+                    }
+
+                    // Path Direction B: Counter-Clockwise
+                    let pathCCW = [];
+                    curr = sIdx;
+                    let blockedCCW = false;
+                    while (curr !== tIdx) {
+                        let s = rowSticks[curr];
+                        if (s.broken) { blockedCCW = true; break; }
+                        pathCCW.push(s);
+                        curr = (curr - 1 + n) % n;
+                    }
+                    if (!blockedCCW) {
+                        let targetS = rowSticks[tIdx];
+                        if (!targetS.broken) {
+                            pathCCW.push(targetS);
+                            validPaths.push(pathCCW);
+                        }
+                    }
+                });
+
+                if (validPaths.length === 0) return null;
+                // Sort by length to fetch the shortest path (least new additions)
+                validPaths.sort((a, b) => a.length - b.length);
+                return validPaths[0];
+            }
+        }
+
+        // Selection state coordinator
+        function handleStickSelection(stickId) {
+            if (state.gameStatus !== 'playing') return;
+            if (state.gameMode === 'pve' && state.turn === 2) return; // Block input on AI thinking
+
+            let stick = state.sticks.find(s => s.id === stickId);
+            if (stick.broken) return;
+
+            let rowSticks = state.sticks.filter(s => s.row === stick.row);
+            let selectedInRow = rowSticks.filter(s => s.selected);
+
+            if (selectedInRow.length === 0) {
+                // First click in this row - clean selections on other rows
+                state.sticks.forEach(s => { if (s.row !== stick.row) s.selected = false; });
+                stick.selected = true;
+            } else {
+                // Row click exists
+                if (stick.selected) {
+                    // Deselect clicked item. If it causes a split, clear split elements to keep remaining contiguous
+                    stick.selected = false;
+                    let remaining = rowSticks.filter(s => s.selected);
+                    if (remaining.length > 0 && !checkContiguous(rowSticks, remaining)) {
+                        // Reset selection on non-contiguous split
+                        rowSticks.forEach(s => s.selected = false);
+                    }
+                } else {
+                    // Expand existing block
+                    let path = findShortestUnbrokenPath(rowSticks, selectedInRow, stick);
+                    if (path) {
+                        path.forEach(s => s.selected = true);
+                    } else {
+                        // Unreachable gap. Restart selection from clicked element
+                        state.sticks.forEach(s => { if (s.row === stick.row) s.selected = false; });
+                        stick.selected = true;
+                    }
+                }
+            }
+
+            // Sync selections to global state
+            let finalSelected = state.sticks.filter(s => s.selected);
+            if (finalSelected.length > 0) {
+                state.selectedRow = finalSelected[0].row;
+                state.selectedSticks = finalSelected.map(s => s.id);
+            } else {
+                state.selectedRow = null;
+                state.selectedSticks = [];
+            }
+
+            playSlightClick();
+            renderBoard();
+            updateUIState();
+        }
+
+        // Partition remaining sticks into isolated continuous chunks (Kayles Linear & Circular structures)
+        function getActiveBlocks() {
+            let blocks = [];
+            let isCircular = (state.gameModeType === 'circular');
+
+            for (let r = 0; r < 3; r++) {
+                let rowSticks = state.sticks.filter(s => s.row === r);
+                
+                if (!isCircular) {
+                    // Linear partition
+                    let currentBlock = [];
+                    rowSticks.forEach(s => {
+                        if (!s.broken) {
+                            currentBlock.push(s);
+                        } else {
+                            if (currentBlock.length > 0) {
+                                blocks.push({ type: 'linear', row: r, sticks: currentBlock });
+                                currentBlock = [];
+                            }
+                        }
+                    });
+                    if (currentBlock.length > 0) {
+                        blocks.push({ type: 'linear', row: r, sticks: currentBlock });
+                    }
+                } else {
+                    // Circular concentric partition
+                    let brokenAny = rowSticks.some(s => s.broken);
+                    
+                    if (!brokenAny) {
+                        // Perfect circular loop (Nothing broken)
+                        blocks.push({ type: 'circular', row: r, sticks: [...rowSticks] });
+                    } else {
+                        // Ring contains broken parts -> It behaves like linear lines
+                        let firstBrokenIdx = rowSticks.findIndex(s => s.broken);
+                        let n = rowSticks.length;
+                        
+                        // Rotate array to start immediately after a broken stick
+                        let tempSticks = [];
+                        for (let j = 0; j < n; j++) {
+                            let idx = (firstBrokenIdx + 1 + j) % n;
+                            tempSticks.push(rowSticks[idx]);
+                        }
+
+                        let currentBlock = [];
+                        tempSticks.forEach(s => {
+                            if (!s.broken) {
+                                currentBlock.push(s);
+                            } else {
+                                if (currentBlock.length > 0) {
+                                    blocks.push({ type: 'linear', row: r, sticks: currentBlock });
+                                    currentBlock = [];
+                                }
+                            }
+                        });
+                        if (currentBlock.length > 0) {
+                            blocks.push({ type: 'linear', row: r, sticks: currentBlock });
+                        }
+                    }
+                }
+            }
+            return blocks;
+        }
+
+        // Simulated game search solver for both Linear and Circular board configurations
+        function findBestAIMove() {
+            let blocks = getActiveBlocks();
+            if (blocks.length === 0) return null;
+
+            let possibleMoves = [];
+
+            // Compute every possible legitimate move on each continuous block
+            blocks.forEach(block => {
+                let n = block.sticks.length;
+                if (block.type === 'circular') {
+                    // For perfect circle, you can break any continuous segment of size k (1 <= k <= N)
+                    // Due to rotational symmetry, starting from idx 0 represents all options
+                    for (let k = 1; k <= n; k++) {
+                        possibleMoves.push({
+                            block: block,
+                            sticksToRemove: block.sticks.slice(0, k)
+                        });
+                    }
+                } else {
+                    // For linear intervals, scan every start index i and size k
+                    for (let i = 0; i < n; i++) {
+                        for (let k = 1; i + k <= n; k++) {
+                            possibleMoves.push({
+                                block: block,
+                                sticksToRemove: block.sticks.slice(i, i + k)
+                            });
+                        }
+                    }
+                }
+            });
+
+            if (possibleMoves.length === 0) return null;
+
+            // Evaluator to simulate and score next states under Misere Rules (last to act loses)
+            function evaluateMove(move) {
+                // Simulate break
+                move.sticksToRemove.forEach(s => s.broken = true);
+                let nextBlocks = getActiveBlocks();
+                // Revert simulation
+                move.sticksToRemove.forEach(s => s.broken = false);
+
+                let allOne = nextBlocks.every(b => b.sticks.length === 1);
+                if (allOne) {
+                    // Under Misere play, we win if we leave an ODD number of isolated single sticks
+                    return (nextBlocks.length % 2 === 1);
+                } else {
+                    // Sprague-Grundy / Classic Nim-sum parity target
+                    let xorSum = nextBlocks.reduce((acc, b) => acc ^ b.sticks.length, 0);
+                    return (xorSum === 0);
+                }
+            }
+
+            // If "Hell" difficulty is active, pick any move that forces a losing state on opponent
+            if (state.aiDifficulty === 'hard') {
+                let winningMoves = possibleMoves.filter(evaluateMove);
+                if (winningMoves.length > 0) {
+                    return winningMoves[Math.floor(Math.random() * winningMoves.length)];
+                }
+            }
+
+            // Easy difficulty or no mathematically winning move -> choose random viable move
+            return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        }
+
+        // TRIGGER AI PLAY ENGINE
+        function triggerAILogic() {
+            document.getElementById('ai-thinking-text').innerText = `${state.p2Name}이(가) 경우의 수 분석 중...`;
+            document.getElementById('ai-thinking-overlay').classList.remove('hidden');
+
+            setTimeout(() => {
+                if (state.gameStatus !== 'playing') return;
+
+                let move = findBestAIMove();
+                if (!move) return;
+
+                // Mark AI selection visually
+                state.selectedRow = move.block.row;
+                state.selectedSticks = [];
+
+                move.sticksToRemove.forEach(s => {
+                    s.selected = true;
+                    state.selectedSticks.push(s.id);
+                });
+
+                renderBoard();
+
+                // Break with visual physics delay
+                setTimeout(() => {
+                    executeMoveAndProgress(state.p2Name);
+                    document.getElementById('ai-thinking-overlay').classList.add('hidden');
+                }, 900);
+
+            }, 1200);
+        }
+
+        // Finalize manual turn
+        function finalizeTurn() {
+            if (state.selectedSticks.length === 0) return;
+            
+            let name = state.turn === 1 ? state.p1Name : state.p2Name;
+            executeMoveAndProgress(name);
+        }
+
+        // Execute physics break state updates and check victory condition
+        function executeMoveAndProgress(actorName) {
+            let rowLetter = ['A', 'B', 'C'][state.selectedRow];
+            let breakCount = state.selectedSticks.length;
+
+            // Integrity verification: Ensure contiguous selection block
+            let selectedSticksObj = state.sticks.filter(s => s.selected);
+            let rowSticks = state.sticks.filter(s => s.row === state.selectedRow);
+            if (!checkContiguous(rowSticks, selectedSticksObj)) {
+                // UI message toast instead of raw alert
+                addLog("경고", "⚠️ 반드시 연결된 막대기들만 묶어서 부술 수 있어요!", "text-red-500 font-bold");
+                resetSelection();
+                return;
+            }
+
+            // Pop cute wood snapping text overlay + splinter/dust burst on each stick about to break
+            let breakingIds = new Set(state.selectedSticks);
+            document.querySelectorAll('.stick-wrapper.active').forEach(dom => {
+                if (!breakingIds.has(Number(dom.dataset.stickId))) return;
+                const bubble = document.createElement('div');
+                bubble.className = "snap-bubble absolute z-30 pointer-events-none text-red-500 font-extrabold text-xl animate-ping";
+                bubble.innerText = "뚝!";
+                dom.appendChild(bubble);
+                setTimeout(() => bubble.remove(), 700);
+                spawnBreakBurst(dom);
+            });
+
+            // Update stick broken states
+            state.sticks.forEach(s => {
+                if (s.selected) {
+                    s.broken = true;
+                    s.selected = false;
+                }
+            });
+
+            state.piles[state.selectedRow] -= breakCount;
+
+            playWoodCrack();
+            renderBoard();
+
+            // Clear variables
+            state.selectedRow = null;
+            state.selectedSticks = [];
+
+            addLog(actorName, `🪓 <strong>${rowLetter}열</strong>에서 ${breakCount}개의 막대기를 연속으로 부러뜨렸습니다!`, "text-stone-800");
+
+            // Check final gameover state (When everything is broken)
+            if (state.sticks.every(s => s.broken)) {
+                state.gameStatus = 'gameover';
+                handleGameFinish(actorName);
+                return;
+            }
+
+            // Toggle Turn state
+            state.turn = state.turn === 1 ? 2 : 1;
+            updateUIState();
+
+            // Trigger PVE AI agent
+            if (state.gameMode === 'pve' && state.turn === 2) {
+                triggerAILogic();
+            }
+        }
+
+        // Handle victory outputs
+        function handleGameFinish(lastActor) {
+            let winner = "";
+            let details = "";
+
+            if (state.gameMode === 'pvp') {
+                winner = lastActor === state.p1Name ? state.p2Name : state.p1Name;
+                details = `마지막 남은 부스러기를 어쩔 수 없이 꺾어버린 ${lastActor}의 아쉬운 패배입니다!`;
+            } else {
+                winner = lastActor === state.p1Name ? state.p2Name : state.p1Name;
+                details = lastActor === state.p1Name 
+                    ? `아쉽게도 마지막 막대기 파편을 부숴 패배했습니다! ${state.p2Name}의 정밀 분석 승리!` 
+                    : `축하합니다! 완벽한 설계와 님합 예측으로 ${state.p2Name}를 무릎 꿇렸습니다!`;
+            }
+
+            document.getElementById('winner-announcement').innerText = `${winner} 승리!`;
+            document.getElementById('winner-details').innerText = details;
+            
+            document.getElementById('game-over-modal').classList.remove('hidden');
+            addLog("게임 결과", `🏆 <strong>${winner}</strong>의 최종 판정승입니다!`, "text-red-600 font-extrabold");
+            
+            playVictoryFanfare();
+        }
+
+        // Small success audio notes
+        function playVictoryFanfare() {
+            if (!state.audioEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                let now = audioCtx.currentTime;
+                let notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+                notes.forEach((freq, idx) => {
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    gain.gain.setValueAtTime(0.12, now + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.12);
+                    osc.stop(now + idx * 0.12 + 0.35);
+                });
+            } catch(e){}
+        }
+
+        // Logger renderer (the visible "칠판 기록장" board was removed; this now just
+        // no-ops safely so the game-flow call sites don't need to change)
+        function addLog(speaker, text, textClass = "") {
+            const container = document.getElementById('game-logs');
+            if (!container) return;
+            const logEntry = document.createElement('div');
+            logEntry.className = `p-1.5 bg-stone-100/50 rounded-lg border border-stone-200 text-sm flex flex-col ${textClass}`;
+            
+            let time = new Date().toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            logEntry.innerHTML = `
+                <div class="flex justify-between items-center opacity-65 text-[10px] font-bold">
+                    <span>${speaker}</span>
+                    <span>${time}</span>
+                </div>
+                <div class="mt-0.5">${text}</div>
+            `;
+            
+            container.appendChild(logEntry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Sync and refresh button states
+        function updateUIState() {
+            const badge = document.getElementById('turn-badge');
+            const actionBtn = document.getElementById('btn-action');
+
+            let currentName = "";
+            if (state.turn === 1) {
+                currentName = state.p1Name;
+                badge.className = "px-4 py-1 rounded-full text-lg font-bold bg-amber-200 text-stone-800 border-2 border-stone-700 shadow-sm";
+            } else {
+                currentName = state.p2Name;
+                badge.className = "px-4 py-1 rounded-full text-lg font-bold bg-stone-600 text-stone-50 border-2 border-stone-700 shadow-sm";
+            }
+            badge.innerText = `${currentName} 차례`;
+
+            // Active remaining counter texts
+            let labelText = state.gameModeType === 'classic' ? '줄' : '링';
+            document.getElementById('stick-counters').innerText = `남은 ${labelText}: A(${state.piles[0]}) · B(${state.piles[1]}) · C(${state.piles[2]})`;
+
+            // Summary button toggles & Validation checks
+            if (state.selectedSticks.length > 0) {
+                let selectedSticksObj = state.sticks.filter(s => s.selected);
+                let rowSticks = state.sticks.filter(s => s.row === state.selectedRow);
+                let isContiguous = checkContiguous(rowSticks, selectedSticksObj);
+
+                if (isContiguous) {
+                    actionBtn.disabled = false;
+                    let activeLetter = ['A', 'B', 'C'][state.selectedRow];
+                    document.getElementById('selection-summary').innerHTML = `
+                        선택: <strong class="text-red-500">${activeLetter}열 연속된 ${state.selectedSticks.length}개</strong>
+                    `;
+                } else {
+                    actionBtn.disabled = true;
+                    document.getElementById('selection-summary').innerHTML = `
+                        <span class="text-red-500 font-bold">⚠️ 반드시 붙어있어야 함!</span>
+                    `;
+                }
+            } else {
+                actionBtn.disabled = true;
+                document.getElementById('selection-summary').innerText = "부러뜨릴 막대기를 선택해 주세요.";
+            }
+        }
+
+        // Cancel choice
+        function resetSelection() {
+            state.sticks.forEach(s => s.selected = false);
+            state.selectedRow = null;
+            state.selectedSticks = [];
+            renderBoard();
+            updateUIState();
+        }
+
+        // Toggle audio preferences
+        function toggleSound() {
+            state.audioEnabled = !state.audioEnabled;
+            const btn = document.getElementById('btn-sound');
+            if (state.audioEnabled) {
+                btn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
+                addLog("설정", "🔊 사운드 이펙트가 활성화되었습니다.", "text-stone-500");
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-volume-xmark text-stone-400"></i>`;
+                addLog("설정", "🔇 사운드 이펙트가 음소거되었습니다.", "text-stone-400");
+            }
+        }
+
+        function closeGameOverModal() {
+            document.getElementById('game-over-modal').classList.add('hidden');
+        }
+
+        // Entry point - we show config modal immediately upon entry
+        window.onload = function() {
+            openConfigModal();
+        }
+    </script>
+</body>
+</html>

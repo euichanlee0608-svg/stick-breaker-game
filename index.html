@@ -426,26 +426,29 @@
             </div>
 
             <!-- Classic Straight Stage Container -->
-            <div id="classic-stage" class="flex flex-col gap-2.5 md:gap-4 lg:gap-6 justify-center my-auto w-full items-center pl-8">
+            <!-- Row labels are pinned near the left red margin line (absolute, out of flow)
+                 instead of sharing flex space with the sticks — that used to push the whole
+                 label+sticks group off-center; now the sticks alone center in the full width. -->
+            <div id="classic-stage" class="flex flex-col gap-2.5 md:gap-4 lg:gap-6 justify-center my-auto w-full items-center">
                 <!-- Row 0 (A) -->
-                <div class="flex items-center gap-4 w-full justify-center">
-                    <div class="w-8 lg:w-10 text-stone-500 font-extrabold text-2xl lg:text-3xl text-center border-r-2 border-stone-200 pr-2 sketch-font">A</div>
+                <div class="relative flex items-center w-full justify-center">
+                    <div class="absolute left-1 sm:left-2 md:left-3 lg:left-4 text-stone-500 font-extrabold text-2xl lg:text-3xl sketch-font select-none">A</div>
                     <div id="row-0" class="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 flex-wrap py-1 min-h-[86px] lg:min-h-[130px] w-full max-w-md lg:max-w-2xl">
                         <!-- Classic Sticks injected here -->
                     </div>
                 </div>
 
                 <!-- Row 1 (B) -->
-                <div class="flex items-center gap-4 w-full justify-center">
-                    <div class="w-8 lg:w-10 text-stone-500 font-extrabold text-2xl lg:text-3xl text-center border-r-2 border-stone-200 pr-2 sketch-font">B</div>
+                <div class="relative flex items-center w-full justify-center">
+                    <div class="absolute left-1 sm:left-2 md:left-3 lg:left-4 text-stone-500 font-extrabold text-2xl lg:text-3xl sketch-font select-none">B</div>
                     <div id="row-1" class="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 flex-wrap py-1 min-h-[86px] lg:min-h-[130px] w-full max-w-md lg:max-w-2xl">
                         <!-- Classic Sticks injected here -->
                     </div>
                 </div>
 
                 <!-- Row 2 (C) -->
-                <div class="flex items-center gap-4 w-full justify-center">
-                    <div class="w-8 lg:w-10 text-stone-500 font-extrabold text-2xl lg:text-3xl text-center border-r-2 border-stone-200 pr-2 sketch-font">C</div>
+                <div class="relative flex items-center w-full justify-center">
+                    <div class="absolute left-1 sm:left-2 md:left-3 lg:left-4 text-stone-500 font-extrabold text-2xl lg:text-3xl sketch-font select-none">C</div>
                     <div id="row-2" class="flex items-center justify-center gap-2 md:gap-3 lg:gap-4 flex-wrap py-1 min-h-[86px] lg:min-h-[130px] w-full max-w-md lg:max-w-2xl">
                         <!-- Classic Sticks injected here -->
                     </div>
@@ -580,7 +583,7 @@
                 <div id="name-fields-grid" class="grid grid-cols-1 gap-2 sm:gap-3">
                     <div>
                         <label class="block text-xs sm:text-sm text-stone-500 font-extrabold mb-1" id="label-p1">플레이어 1 이름</label>
-                        <input type="text" id="input-p1-name" value="너구리" class="w-full px-3 py-1 sm:py-1.5 border-2 border-stone-400 rounded-xl bg-amber-50/30 text-stone-800 font-extrabold text-center focus:outline-none focus:border-stone-700">
+                        <input type="text" id="input-p1-name" value="" placeholder="이름을 적어주세요!" class="w-full px-3 py-1 sm:py-1.5 border-2 border-stone-400 rounded-xl bg-amber-50/30 text-stone-800 font-extrabold text-center placeholder:text-stone-400 placeholder:font-semibold focus:outline-none focus:border-stone-700">
                     </div>
                     <div id="p2-name-field" class="hidden">
                         <label class="block text-xs sm:text-sm text-stone-500 font-extrabold mb-1" id="label-p2">플레이어 2 이름</label>
@@ -787,7 +790,7 @@
             aiDifficulty: 'hard',     
             gameStatus: 'setup',      
             audioEnabled: true,       
-            p1Name: '너구리',
+            p1Name: '플레이어 1',
             p2Name: 'AI 알파나무'
         };
 
@@ -1126,9 +1129,10 @@
             const baseRadii = [55, 100, 145];
             const radii = baseRadii.map(v => v * scale);
             // Smaller than the classic-mode sticks on purpose: up to 13 of them radiate from
-            // one point here, so keeping them slim is what keeps the ring legible.
-            const stickW = 12 * scale;
-            const stickH = 50 * scale;
+            // one point here. Slightly shorter + thicker than a strict scale-down reads
+            // better at this size than a long thin sliver would.
+            const stickW = 15 * scale;
+            const stickH = 42 * scale;
             // Each ring starts at a different angle so A/B/C sticks never line up radially
             // into one long streak — without this, ring[0] of every row sits at the same
             // "12 o'clock" spot and the rings visually fuse together.

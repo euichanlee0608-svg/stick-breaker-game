@@ -1816,8 +1816,10 @@ body{word-break:keep-all;overflow-wrap:break-word}
         }
 
         // Entry point - we show config modal immediately upon entry
+        // (the modal is already visible in the markup; onload can fire late on a slow first
+        // visit, after the player has started — don't pop setup back over their game then)
         window.onload = function() {
-            openConfigModal();
+            if (state.gameStatus === 'setup') openConfigModal();
         }
     </script>
 <script>
